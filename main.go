@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"log"
 )
-const version = "0.0.8"
+const version = "0.0.9"
 
 type Plugin struct {
 	Name string `json:"name"`
@@ -19,7 +19,7 @@ type Plugin struct {
 
 func main() {
 	fmt.Printf("%s\n", version)
-	/*cmd := exec.Command("plesk", "bin", "pleskbackup", "--domains-name", "elliott.irapture.com", "--incremental")	
+	cmd := exec.Command("plesk", "bin", "pleskbackup", "--domains-name", "elliott.irapture.com", "--incremental")	
 	out, err := cmd.Output()
 	
 	if (err != nil) {
@@ -27,9 +27,9 @@ func main() {
 	} else {
 		fmt.Printf("Out: %v", out)
 	}
-	*/
-	cmd := exec.Command("plesk", "ext", "wp-toolkit", "--wp-cli", "-instance-id", "400", "--", "plugin", "list", "--format=json", "--fields=name,status,update,version,update_version")
-	out, err := cmd.Output()
+	
+	cmd = exec.Command("plesk", "ext", "wp-toolkit", "--wp-cli", "-instance-id", "400", "--", "plugin", "list", "--format=json", "--fields=name,status,update,version,update_version")
+	out, err = cmd.Output()
 
 	if (err != nil) {
 		log.Fatalf("Error: %v\n", err)
