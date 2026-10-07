@@ -6,8 +6,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"log"
+	"net/http"
 )
-const version = "0.0.9"
+const version = "0.1.1"
+const domain = "elliott.irapture.com"
 
 type Plugin struct {
 	Name string `json:"name"`
@@ -19,7 +21,7 @@ type Plugin struct {
 
 func main() {
 	fmt.Printf("%s\n", version)
-	cmd := exec.Command("plesk", "bin", "pleskbackup", "--domains-name", "elliott.irapture.com", "--incremental")	
+	cmd := exec.Command("plesk", "bin", "pleskbackup", "--domains-name", domain, "--incremental")	
 	out, err := cmd.Output()
 	
 	if (err != nil) {
@@ -63,15 +65,64 @@ func main() {
 
 			if (err != nil) {
 				// TODO: this should rollback
+				err2 := restore(domain)
+				if err2 != nil {
+					log.Fatalf("Error durring restore: %v\n\t- occured during error: %v",
+						err2,
+						err,
+					)
+				}
 				log.Fatalf("Error: %v\n", err)
 			}
 
-			fmt.Printf("\t%s\n", out)
+			res, err := http.Get(fmt.Sprintf("https://%s/", domain))
+
+			if (err != nil) {
+				// TODO: this should rollback
+				err2 := restore(domain)
+				if err2 != nil {
+					log.Fatalf("Error durring restore: %v\n\t- occured during error: %v",
+						err2,
+						err,
+					)
+				}
+				log.Fatalf("Error: %v\n", err)
+			}
+
+			if (res.StatusCode != http.StatusOK) { 
+				err2 := restore(domain)
+				if err2 != nil {
+					log.Fatalf("Error durring restore: %v\n\t- occured during error: %v",
+						err2,
+						err,
+					)
+				}
+				log.Fatalf("Error: %s\nRestored.\n", res.Status)
+			}
+
+			fmt.Printf("\tPLUGIN UPDATE TEXT: %s\n", out)
 		}
 	}
 	fmt.Println("----- Plugin List End ------")
 
 	
+}
+
+func restore(d string) error {
+
+	restore := exec.Command(
+		"sh", 
+		"-c",
+		`plesk bin pleskrestore --restore "$(ls -t /var/lib/psa/dumps/domains/"$1"/*.xml | head -1)" -level domains`,
+		"sh", 
+		domain,
+	)
+
+	if err := restore.Run(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p Plugin) UpdateAvailable() bool {
